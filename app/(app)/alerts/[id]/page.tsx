@@ -7,14 +7,25 @@ import { AiInsightCard } from '@/components/alerts/AiInsightCard';
 import { Badge } from '@/components/ui/badge';
 import { alertsRepo } from '@/lib/db';
 import { formatDateTime, formatRelative } from '@/lib/utils/format';
+import { AlertActions } from './alert-actions';
+import { getCurrentUserId } from '@/lib/actions/alerts';
 
 interface PageProps {
   params: { id: string };
 }
 
 export default async function AlertDetailPage({ params }: PageProps) {
-  const alert = await alertsRepo.getAlert(params.id);
+  const [alert, currentUserId] = await Promise.all([
+    alertsRepo.getAlert(params.id),
+    getCurrentUserId(),
+  ]);
   if (!alert) notFound();
+
+  // If the repo's Alert type doesn't expose `assignedTo` yet, this safely
+  // falls back to null. The write path (assignAlert) still works end-to-end;
+  // the UI just won't be able to show the "Unassign" variant of the button.
+  const currentAssignee =
+    (alert as { assignedTo?: string | null }).assignedTo ?? null;
 
   return (
     <div className="space-y-6">
@@ -80,20 +91,13 @@ export default async function AlertDetailPage({ params }: PageProps) {
             <CardHeader>
               <CardTitle>Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {/* Placeholder action rows — wire up to Server Actions in a follow-up */}
-              <button className="w-full rounded-btn border border-surface-border px-3 py-2 text-left hover:border-brand-orange/40">
-                Assign to…
-              </button>
-              <button className="w-full rounded-btn border border-surface-border px-3 py-2 text-left hover:border-brand-orange/40">
-                Mark in progress
-              </button>
-              <button className="w-full rounded-btn border border-surface-border px-3 py-2 text-left hover:border-brand-orange/40">
-                Close alert
-              </button>
-              <button className="w-full rounded-btn border border-surface-border px-3 py-2 text-left hover:border-brand-orange/40">
-                Re-run AI analysis
-              </button>
+            <CardContent>
+              <AlertActions
+                alertId={params.id}
+                currentStatus={alert.status}
+                currentAssignee={currentAssignee}
+                currentUserId={currentUserId}
+              />
             </CardContent>
           </Card>
         </div>
