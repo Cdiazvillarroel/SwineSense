@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Logo } from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,38 @@ import { createClient } from '@/lib/supabase/client';
  *
  * Branded per Brand Manual: dark centered card, gradient CTA, logo on top.
  * Supports ?next=/target redirect after successful login.
+ *
+ * The form is wrapped in a Suspense boundary because useSearchParams()
+ * requires it at the route level for Next.js App Router prerendering.
  */
 export default function LoginPage() {
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-center">
+        <Logo size="lg" showTagline />
+      </div>
+
+      <Card accent>
+        <CardHeader>
+          <CardTitle>Welcome back</CardTitle>
+          <CardDescription>Sign in to access your farm operations.</CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <Suspense fallback={<FormSkeleton />}>
+            <LoginForm />
+          </Suspense>
+        </CardContent>
+      </Card>
+
+      <p className="text-center text-xs text-ink-muted">
+        © 2026 SwineSense · AI Farm Operations Assistant
+      </p>
+    </div>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get('next') ?? '/overview';
@@ -45,63 +75,54 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-center">
-        <Logo size="lg" showTagline />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="email" className="label-badge">Email</label>
+        <input
+          id="email"
+          type="email"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="mt-1.5 block w-full rounded-btn border border-surface-border bg-surface-elevated px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand-orange focus:ring-0"
+          placeholder="manager@farm.com"
+        />
       </div>
 
-      <Card accent>
-        <CardHeader>
-          <CardTitle>Welcome back</CardTitle>
-          <CardDescription>Sign in to access your farm operations.</CardDescription>
-        </CardHeader>
+      <div>
+        <label htmlFor="password" className="label-badge">Password</label>
+        <input
+          id="password"
+          type="password"
+          required
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="mt-1.5 block w-full rounded-btn border border-surface-border bg-surface-elevated px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand-orange focus:ring-0"
+          placeholder="••••••••"
+        />
+      </div>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="label-badge">Email</label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1.5 block w-full rounded-btn border border-surface-border bg-surface-elevated px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand-orange focus:ring-0"
-                placeholder="manager@farm.com"
-              />
-            </div>
+      {error && (
+        <p className="text-sm text-status-critical" role="alert">
+          {error}
+        </p>
+      )}
 
-            <div>
-              <label htmlFor="password" className="label-badge">Password</label>
-              <input
-                id="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1.5 block w-full rounded-btn border border-surface-border bg-surface-elevated px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus:border-brand-orange focus:ring-0"
-                placeholder="••••••••"
-              />
-            </div>
+      <Button type="submit" size="lg" className="w-full" disabled={loading}>
+        {loading ? 'Signing in…' : 'Sign in'}
+      </Button>
+    </form>
+  );
+}
 
-            {error && (
-              <p className="text-sm text-status-critical" role="alert">
-                {error}
-              </p>
-            )}
-
-            <Button type="submit" size="lg" className="w-full" disabled={loading}>
-              {loading ? 'Signing in…' : 'Sign in'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <p className="text-center text-xs text-ink-muted">
-        © 2026 SwineSense · AI Farm Operations Assistant
-      </p>
+function FormSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="h-16 animate-pulse rounded-btn bg-surface-border/40" />
+      <div className="h-16 animate-pulse rounded-btn bg-surface-border/40" />
+      <div className="h-12 animate-pulse rounded-btn bg-surface-border/40" />
     </div>
   );
 }
