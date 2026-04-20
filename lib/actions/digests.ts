@@ -16,6 +16,7 @@
 
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import type { Database, TableUpdate } from '@/lib/database';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -42,7 +43,7 @@ export type ActionResult<T = null> =
 // ─────────────────────────── Supabase admin helper ──────────────
 
 function getServiceClient() {
-  return createServiceClient(
+  return createServiceClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } }
@@ -74,7 +75,7 @@ export async function updateActionStatus(
     const status = StatusSchema.parse(statusRaw);
     const { user, sb } = await requireUser();
 
-    const patch: Record<string, unknown> = {
+    const patch: TableUpdate<'digest_action_items'> = {
       status,
       updated_at: new Date().toISOString(),
     };
