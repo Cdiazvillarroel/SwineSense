@@ -54,13 +54,13 @@ async function load(params: PageProps['searchParams']) {
     q = q.eq('site_id', params.site);
   }
   if (params.type && (DEVICE_TYPES as readonly string[]).includes(params.type)) {
-    q = q.eq('device_type', params.type);
+    q = q.eq('device_type', params.type as (typeof DEVICE_TYPES)[number]);
   }
   if (
     params.signal &&
     (SIGNAL_STATUSES as readonly string[]).includes(params.signal)
   ) {
-    q = q.eq('signal_status', params.signal);
+    q = q.eq('signal_status', params.signal as (typeof SIGNAL_STATUSES)[number]);
   }
 
   const devicesRes = await q.range(from, to);
