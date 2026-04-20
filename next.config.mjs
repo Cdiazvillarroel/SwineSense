@@ -2,11 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // Temporarily skip type-checking during build.
-  // Runtime type safety is unaffected; this only bypasses the compile-time
-  // gate so we can deploy. Remove once a full `tsc --noEmit` pass is clean.
+  // Type checking runs during build — if this fails, fix the errors rather
+  // than bypassing. Keep this strict.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -30,5 +29,5 @@ const nextConfig = {
     ];
   },
 };
-
 export default nextConfig;
+
