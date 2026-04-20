@@ -70,8 +70,8 @@ async function loadData() {
         channel: c.channel as 'telegram' | 'whatsapp' | 'email' | 'sms',
         recipient: c.recipient,
         min_severity: c.min_severity as 'Low' | 'Medium' | 'High' | 'Critical',
-        active: c.active,
-        created_at: c.created_at,
+        active: c.active ?? true,
+        created_at: c.created_at ?? new Date().toISOString(),
       })),
   }));
 
