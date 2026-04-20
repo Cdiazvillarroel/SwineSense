@@ -1,21 +1,17 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import type { Database } from '@/lib/database';
 
 /**
- * Supabase client scoped to the current user's session cookies.
- * RLS policies apply automatically.
+ * SwineSense — User-scoped Supabase client for Server Components, Server
+ * Actions, and Route Handlers. Respects RLS (reads the user session from
+ * cookies and impersonates them on every query).
  *
- * Usage:
- *   const supabase = createClient();
- *   const { data } = await supabase.from('sites').select('*');
- *
- * When upgrading to Next.js 15: make this `async`, add `await` to `cookies()`,
- * and update callers to `await createClient()`.
+ * Typed with `Database` so all CRUD is strictly type-checked.
  */
 export function createClient() {
   const cookieStore = cookies();
-
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -27,14 +23,16 @@ export function createClient() {
           try {
             cookieStore.set({ name, value, ...options });
           } catch {
-            // Server Components cannot write cookies — safely ignored.
+            // Cookie mutations are no-ops inside Server Components; this is
+            // expected and safe — the middleware is responsible for refreshing
+            // session cookies for the next request.
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options });
           } catch {
-            // Server Components cannot write cookies — safely ignored.
+            // Same as above — ignored in Server Components.
           }
         },
       },
