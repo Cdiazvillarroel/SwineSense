@@ -53,7 +53,7 @@ async function load(params: PageProps['searchParams']) {
     params.health &&
     (HEALTH_STATUSES as readonly string[]).includes(params.health)
   ) {
-    q = q.eq('health_status', params.health);
+    q = q.eq('health_status', params.health as HealthStatus);
   }
 
   const animalsRes = await q.range(from, to);
