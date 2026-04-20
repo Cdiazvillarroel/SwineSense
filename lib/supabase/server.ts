@@ -1,14 +1,20 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 /**
- * Returns a Supabase client scoped to the current user's session cookies.
+ * Supabase client scoped to the current user's session cookies.
  * RLS policies apply automatically.
  *
- * `await cookies()` is compatible with both Next.js 14 (sync) and 15 (async).
+ * Usage:
+ *   const supabase = createClient();
+ *   const { data } = await supabase.from('sites').select('*');
+ *
+ * When upgrading to Next.js 15: make this `async`, add `await` to `cookies()`,
+ * and update callers to `await createClient()`.
  */
-export async function getSupabase() {
-  const cookieStore = await cookies();
+export function createClient() {
+  const cookieStore = cookies();
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -17,9 +23,20 @@ export async function getSupabase() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        // no-ops: pages are read-only and Server Actions handle their own writes
-        set() {},
-        remove() {},
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch {
+            // Server Components cannot write cookies — safely ignored.
+          }
+        },
+        remove(name: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value: '', ...options });
+          } catch {
+            // Server Components cannot write cookies — safely ignored.
+          }
+        },
       },
     }
   );
