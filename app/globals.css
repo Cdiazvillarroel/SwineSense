@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ----------------------------------------------------------------------------
+ * Brand tokens exposed as CSS variables so non-Tailwind contexts
+ * (SVG strokes, chart colors, inline styles) can read them.
+ * -------------------------------------------------------------------------- */
+@layer base {
+  :root {
+    --color-brand-orange: 232 93 38;       /* #E85D26 */
+    --color-brand-orange-light: 255 122 69; /* #FF7A45 */
+    --color-brand-magenta: 196 35 104;      /* #C42368 */
+    --color-brand-magenta-light: 231 64 144;
+    --color-brand-gold: 212 160 74;
+
+    --color-surface: 12 14 18;
+    --color-surface-elevated: 19 22 28;
+    --color-surface-card: 26 30 38;
+    --color-surface-border: 44 50 60;
+
+    --color-ink-primary: 234 230 222;
+    --color-ink-secondary: 158 151 140;
+    --color-ink-muted: 107 103 96;
+
+    --color-status-success: 52 199 89;
+    --color-status-warning: 255 214 10;
+    --color-status-critical: 255 69 58;
+  }
+
+  html,
+  body {
+    background: rgb(var(--color-surface));
+    color: rgb(var(--color-ink-primary));
+    font-feature-settings: 'ss01', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: var(--font-barlow), system-ui, sans-serif;
+    font-weight: 400;
+  }
+
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-archivo-black), system-ui, sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.015em;
+  }
+
+  /* Hide default outline; we provide a branded focus ring. */
+  *:focus {
+    outline: none;
+  }
+  *:focus-visible {
+    @apply ring-2 ring-brand-orange/70 ring-offset-2 ring-offset-surface rounded-sm;
+  }
+
+  /* Scrollbar (subtle, brand-consistent) */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: rgb(var(--color-surface)); }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-surface-border));
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--color-ink-muted)); }
+}
+
+/* ----------------------------------------------------------------------------
+ * Utility components used across the app
+ * -------------------------------------------------------------------------- */
+@layer components {
+  .label-badge {
+    @apply font-condensed font-bold uppercase tracking-label text-[11px] text-ink-secondary;
+  }
+
+  .gradient-text {
+    @apply bg-brand-gradient bg-clip-text text-transparent;
+  }
+
+  /* Top-border accent used by module cards per brand guidelines */
+  .card-accent-top::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #E85D26 0%, #C42368 100%);
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+  }
+}
