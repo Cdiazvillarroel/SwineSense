@@ -1,38 +1,26 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import type { Database } from '@/lib/types/database';
 
 /**
- * Supabase client for Server Components and Route Handlers.
+ * Returns a Supabase client scoped to the current user's session cookies.
+ * RLS policies apply automatically.
  *
- * Reads the Supabase auth cookie to run queries as the authenticated user,
- * so Row Level Security policies apply automatically.
- *
- * Server Components cannot set cookies (Next.js constraint), so `set` and
- * `remove` fail silently here. The middleware.ts file handles cookie refresh.
+ * `await cookies()` is compatible with both Next.js 14 (sync) and 15 (async).
  */
-export function createClient() {
-  const cookieStore = cookies();
-
-  return createServerClient<Database>(
+export async function getSupabase() {
+  const cookieStore = await cookies();
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll();
+        get(name: string) {
+          return cookieStore.get(name)?.value;
         },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            );
-          } catch {
-            // setAll called from a Server Component — safe to ignore
-            // because middleware refreshes the session on each request.
-          }
-        },
+        // no-ops: pages are read-only and Server Actions handle their own writes
+        set() {},
+        remove() {},
       },
-    },
+    }
   );
 }
