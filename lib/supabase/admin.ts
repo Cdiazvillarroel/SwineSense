@@ -1,34 +1,26 @@
-import 'server-only';
-
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/types/database';
+import type { Database } from '@/lib/database';
 
 /**
- * Service-role Supabase client. BYPASSES Row Level Security.
+ * SwineSense — Service-role Supabase client (server-only).
  *
- * USE ONLY in:
- *  - API routes that ingest external data (devices, webhooks from Pipedream)
- *  - Cron / server-side aggregation jobs
- *  - Admin operations confirmed as coming from a trusted source
+ * Use ONLY in:
+ *   - API routes (app/api/**)
+ *   - Server Actions that need to bypass RLS (e.g. Storage uploads)
+ *   - Pipedream callbacks / webhooks
  *
- * The `server-only` import ensures this file can never be bundled into the
- * client. If you accidentally import it from a Client Component, the build
- * will fail loudly.
+ * Never expose this client or its key to the browser. It bypasses Row-Level
+ * Security and can read/write any row in any table.
+ *
+ * Typed with the generated `Database` schema so every `.from('table').insert/update(...)`
+ * call is strictly type-checked at build time.
  */
 export function createAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !serviceKey) {
-    throw new Error(
-      'Missing Supabase credentials. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.',
-    );
-  }
-
-  return createClient<Database>(url, serviceKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set');
+  if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
+  return createClient<Database>(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 }
