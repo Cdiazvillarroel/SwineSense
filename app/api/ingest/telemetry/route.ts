@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
   const rows = Array.isArray(parsed.data) ? parsed.data : [parsed.data];
   const supabase = createAdminClient();
 
-  const { error } = await supabase.from('telemetry_raw').insert(rows);
+  // supabase-js PostgREST typing needs a Database generic; rows validated by Zod above
+  const { error } = await supabase.from('telemetry_raw').insert(rows as never);
   if (error) {
     return NextResponse.json(
       { error: `Insert failed: ${error.message}` },
