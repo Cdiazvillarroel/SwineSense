@@ -19,9 +19,9 @@ interface PageProps {
 const SEVERITIES = new Set<AlertSeverity>(['Low', 'Medium', 'High', 'Critical']);
 const STATUSES = new Set<AlertStatus>(['Open', 'In Progress', 'Closed', 'Snoozed']);
 
-function parseCsv<T>(value: string | undefined, allowed: Set<T>): T[] | undefined {
+function parseCsv<T extends string>(value: string | undefined, allowed: Set<T>): T[] | undefined {
   if (!value) return undefined;
-  const parsed = value.split(',').filter((v): v is T => (allowed as Set<unknown>).has(v as unknown));
+  const parsed = value.split(',').filter((v): v is T => allowed.has(v as T));
   return parsed.length ? parsed : undefined;
 }
 
