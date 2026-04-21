@@ -16,8 +16,11 @@ import { format, parseISO } from 'date-fns';
  *
  * Dark-theme styled, brand-consistent. Supports multiple series
  * (e.g. one per pen) by passing an array of series.
+ *
+ * Y-axis auto-scales to the actual data range with smart padding,
+ * so narrow metrics like body temperature (38-40°C) remain readable
+ * instead of being flattened against a 0-based axis.
  */
-
 export interface TrendSeries {
   name: string;
   color?: string;
@@ -31,6 +34,39 @@ interface TrendChartProps {
 }
 
 const DEFAULT_COLORS = ['#E85D26', '#C42368', '#D4A04A', '#5AC8FA', '#34C759'];
+
+/**
+ * Compute a readable Y-axis domain from the actual data.
+ *
+ * For temperatures (°C), we don't pin the floor at 0 — that would
+ * flatten the 38-40°C body-temp range against an invisible axis.
+ * For counts/amounts (g, h, activity), we keep the floor at 0.
+ */
+function computeYDomain(
+  values: number[],
+  unit?: string,
+): [number, number] {
+  if (values.length === 0) return [0, 10];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  // pad by 15% of range, with a floor of 0.3 units so flat series still render
+  const padding = Math.max(range * 0.15, 0.3);
+
+  // Temperatures: allow floor below 0-ish so 38°C isn't squashed
+  // Other metrics (grams, hours, counts, THI): keep floor at 0
+  const allowSubZero = unit === '°C';
+
+  const rawMin = min - padding;
+  const rawMax = max + padding;
+
+  const lo = allowSubZero
+    ? Math.floor(rawMin * 10) / 10
+    : Math.max(0, Math.floor(rawMin * 10) / 10);
+  const hi = Math.ceil(rawMax * 10) / 10;
+
+  return [lo, hi];
+}
 
 export function TrendChart({ series, unit, height = 280 }: TrendChartProps) {
   // Normalise to a single array keyed by date for recharts
@@ -46,6 +82,13 @@ export function TrendChart({ series, unit, height = 280 }: TrendChartProps) {
     });
     return row;
   });
+
+  // Gather all non-null values across all series to compute a smart Y domain
+  const allValues = series
+    .flatMap((s) => s.data.map((d) => d.value))
+    .filter((v): v is number => v !== null && Number.isFinite(v));
+
+  const [yMin, yMax] = computeYDomain(allValues, unit);
 
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -64,6 +107,8 @@ export function TrendChart({ series, unit, height = 280 }: TrendChartProps) {
           axisLine={{ stroke: '#2C323C' }}
           unit={unit}
           width={50}
+          domain={[yMin, yMax]}
+          allowDecimals={true}
         />
         <Tooltip
           contentStyle={{
