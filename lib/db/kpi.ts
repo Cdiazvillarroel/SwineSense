@@ -109,7 +109,14 @@ export async function getAggregatedKpi(): Promise<KpiOverview | null> {
   const sum = <K extends keyof KpiRow>(k: K): number =>
     rows.reduce((acc, r) => acc + (Number(r[k]) || 0), 0);
   const avg = <K extends keyof KpiRow>(k: K): number | null => {
-    const vals = rows.map((r) => r[k]).filter((v): v is number => typeof v === 'number');
+    // Extract numeric values without a type predicate — TypeScript can't
+    // narrow KpiRow[K] to `number` because K spans columns of varying types
+    // (string, RiskLevel, etc). We collect matches manually instead.
+    const vals: number[] = [];
+    for (const r of rows) {
+      const v = r[k];
+      if (typeof v === 'number') vals.push(v);
+    }
     return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
   };
 
@@ -179,8 +186,11 @@ export async function getKpiSeries(
 
   if (error) throw new Error(`getKpiSeries: ${error.message}`);
 
-  return (data ?? []).map((row) => ({
-    date: (row as Record<string, unknown>).date as string,
-    value: (row as Record<string, unknown>)[col] as number | null,
-  }));
+  return (data ?? []).map((row) => {
+    const r = row as unknown as Record<string, unknown>;
+    return {
+      date: r.date as string,
+      value: r[col] as number | null,
+    };
+  });
 }
