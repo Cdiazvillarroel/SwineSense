@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendChart } from '@/components/charts/TrendChart';
 import { trendsRepo } from '@/lib/db';
@@ -51,7 +52,6 @@ export default async function TrendsPage(props: PageProps) {
     ? await trendsRepo.getAnimalTrend(metric.key as never, { siteId, from, to })
     : await trendsRepo.getEnvironmentTrend(metric.key as never, { siteId, from, to });
 
-  // Group by pen to create one series per pen
   const byPen = new Map<string, { name: string; data: { date: string; value: number | null }[] }>();
   for (const p of data) {
     const key = p.penName ?? 'Unknown pen';
@@ -106,7 +106,7 @@ function MetricSelector({
       {Object.entries(METRICS).map(([key, m]) => {
         const active = key === current;
         return (
-          
+          <Link
             key={key}
             href={`?site=${siteId}&metric=${key}&days=${days}`}
             className={
@@ -116,14 +116,14 @@ function MetricSelector({
             }
           >
             {m.label}
-          </a>
+          </Link>
         );
       })}
 
       <span className="mx-2 h-6 w-px bg-surface-border" />
       <span className="label-badge mr-1">Range</span>
       {[7, 30, 90].map((d) => (
-        
+        <Link
           key={d}
           href={`?site=${siteId}&metric=${current}&days=${d}`}
           className={
@@ -133,7 +133,7 @@ function MetricSelector({
           }
         >
           {d}d
-        </a>
+        </Link>
       ))}
     </div>
   );
