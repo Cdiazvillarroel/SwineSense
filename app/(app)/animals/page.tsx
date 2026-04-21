@@ -15,15 +15,17 @@ type HealthStatus = (typeof HEALTH_STATUSES)[number];
 
 const PAGE_SIZE = 50;
 
-interface PageProps {
-  searchParams: {
-    site?: string;
-    health?: string;
-    page?: string;
-  };
+interface SearchParams {
+  site?: string;
+  health?: string;
+  page?: string;
 }
 
-async function load(params: PageProps['searchParams']) {
+interface PageProps {
+  searchParams: Promise<SearchParams>;
+}
+
+async function load(params: SearchParams) {
   const sb = createClient();
 
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
@@ -86,7 +88,8 @@ async function load(params: PageProps['searchParams']) {
   };
 }
 
-export default async function AnimalsPage({ searchParams }: PageProps) {
+export default async function AnimalsPage(props: PageProps) {
+  const searchParams = await props.searchParams;
   const { sites, animals, pensMap, sitesMap, total, page, pageSize, totalPages } =
     await load(searchParams);
 
@@ -253,7 +256,7 @@ function PageLink({
   page: number;
   disabled: boolean;
   label: string;
-  searchParams: PageProps['searchParams'];
+  searchParams: SearchParams;
 }) {
   if (disabled) {
     return (
