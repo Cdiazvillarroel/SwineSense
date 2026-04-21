@@ -1,3 +1,6 @@
+// Test comment
+import { Card, CardContent } from '@/components/ui/card';
+...
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertFilters } from '@/components/alerts/AlertFilters';
 import { AlertTable } from '@/components/alerts/AlertTable';
