@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendChart } from '@/components/charts/TrendChart';
 import { trendsRepo } from '@/lib/db';
 import { sitesRepo } from '@/lib/db';
+import Link from 'next/link';
 
 export const metadata = { title: 'Trends' };
 
@@ -36,7 +36,7 @@ export default async function TrendsPage(props: PageProps) {
   const searchParams = await props.searchParams;
   const metricKey = searchParams.metric ?? 'avg_body_temp';
   const metric = METRICS[metricKey] ?? METRICS.avg_body_temp!;
-  const days = Math.min(180, Math.max(7, Number(searchParams.days ?? 30)));
+  const days = Math.min(90, Math.max(7, Number(searchParams.days ?? 30)));
 
   const sites = await sitesRepo.listSites();
   const siteId = searchParams.site ?? sites[0]?.id;
@@ -122,7 +122,7 @@ function MetricSelector({
 
       <span className="mx-2 h-6 w-px bg-surface-border" />
       <span className="label-badge mr-1">Range</span>
-      {[7, 30, 90].map((d) => (
+      {[7, 15, 30].map((d) => (
         <Link
           key={d}
           href={`?site=${siteId}&metric=${current}&days=${d}`}
