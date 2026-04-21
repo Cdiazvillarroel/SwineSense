@@ -126,4 +126,65 @@ function SiteSwitcher({ sites, selectedSite, onChange, loading }: SiteSwitcherPr
   const [open, setOpen] = useState(false);
   const selectedId = selectedSite?.id ?? null;
 
-  re
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          'flex items-center gap-2 rounded-btn border border-surface-border bg-surface-card px-3 py-1.5 text-sm',
+          'hover:border-brand-orange/40',
+          loading && 'opacity-60',
+        )}
+      >
+        <span className="label-badge">Site</span>
+        <span className="font-semibold text-ink-primary">
+          {selectedSite?.name ?? 'All sites'}
+        </span>
+        <ChevronDown className="h-4 w-4 text-ink-muted" />
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 mt-2 w-72 rounded-card border border-surface-border bg-surface-card p-1 shadow-card"
+          onMouseLeave={() => setOpen(false)}
+        >
+          <button
+            onClick={() => {
+              onChange(null);
+              setOpen(false);
+            }}
+            className={cn(
+              'flex w-full items-center gap-2 rounded-btn px-3 py-2 text-sm hover:bg-surface-elevated',
+              selectedId === null && 'bg-surface-elevated text-brand-orange',
+            )}
+          >
+            <span className="h-2 w-2 rounded-full bg-brand-orange" />
+            All sites
+          </button>
+          {sites.map((site) => {
+            const isActive = selectedId === site.id;
+            return (
+              <button
+                key={site.id}
+                onClick={() => {
+                  onChange(site.id);
+                  setOpen(false);
+                }}
+                className={cn(
+                  'flex w-full items-center justify-between gap-2 rounded-btn px-3 py-2 text-sm hover:bg-surface-elevated',
+                  isActive && 'bg-surface-elevated text-brand-orange',
+                )}
+              >
+                <span className={cn('truncate', isActive ? 'text-brand-orange' : 'text-ink-primary')}>
+                  {site.name}
+                </span>
+                <span className="text-xs text-ink-muted">{site.totalAnimals} animals</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
