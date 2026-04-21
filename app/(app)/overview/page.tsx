@@ -20,11 +20,16 @@ export const metadata = { title: 'Overview' };
  * sites the user can see.
  */
 
-interface PageProps {
-  searchParams: { site?: string };
+interface SearchParams {
+  site?: string;
 }
 
-export default async function OverviewPage({ searchParams }: PageProps) {
+interface PageProps {
+  searchParams: Promise<SearchParams>;
+}
+
+export default async function OverviewPage(props: PageProps) {
+  const searchParams = await props.searchParams;
   const siteId = searchParams.site ?? null;
 
   // Parallel loads — Server Component render is blocking but each query
