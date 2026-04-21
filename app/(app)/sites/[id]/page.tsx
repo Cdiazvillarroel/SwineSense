@@ -17,7 +17,7 @@ import { formatRelative } from '@/lib/utils/format';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 async function load(siteId: string) {
@@ -58,8 +58,9 @@ async function load(siteId: string) {
   };
 }
 
-export default async function SiteDetailPage({ params }: PageProps) {
-  const { site, pens, kpi, alerts, devices } = await load(params.id);
+export default async function SiteDetailPage(props: PageProps) {
+  const { id } = await props.params;
+  const { site, pens, kpi, alerts, devices } = await load(id);
   if (!site) notFound();
 
   const activeDevices = devices.filter((d) => d.active).length;
