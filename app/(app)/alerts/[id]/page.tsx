@@ -11,12 +11,13 @@ import { AlertActions } from './alert-actions';
 import { getCurrentUserId } from '@/lib/actions/alerts';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default async function AlertDetailPage({ params }: PageProps) {
+export default async function AlertDetailPage(props: PageProps) {
+  const { id } = await props.params;
   const [alert, currentUserId] = await Promise.all([
-    alertsRepo.getAlert(params.id),
+    alertsRepo.getAlert(id),
     getCurrentUserId(),
   ]);
   if (!alert) notFound();
@@ -35,7 +36,6 @@ export default async function AlertDetailPage({ params }: PageProps) {
       >
         <ArrowLeft className="h-4 w-4" /> Back to alerts
       </Link>
-
       <header className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -64,7 +64,6 @@ export default async function AlertDetailPage({ params }: PageProps) {
           </div>
         </div>
       </header>
-
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <Card>
@@ -82,10 +81,8 @@ export default async function AlertDetailPage({ params }: PageProps) {
               )}
             </CardContent>
           </Card>
-
           <AiInsightCard alert={alert} />
         </div>
-
         <div className="space-y-4">
           <Card>
             <CardHeader>
@@ -93,7 +90,7 @@ export default async function AlertDetailPage({ params }: PageProps) {
             </CardHeader>
             <CardContent>
               <AlertActions
-                alertId={params.id}
+                alertId={id}
                 currentStatus={alert.status}
                 currentAssignee={currentAssignee}
                 currentUserId={currentUserId}
