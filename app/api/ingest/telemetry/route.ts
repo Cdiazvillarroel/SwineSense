@@ -30,7 +30,7 @@ const Reading = z.object({
   water_intake_ml: z.number().min(0).nullable().optional(),
   battery: z.number().int().min(0).max(100).nullable().optional(),
   signal: z.number().int().nullable().optional(),
-  raw_payload: z.record(z.unknown()).optional(),
+  raw_payload: z.any().optional(),
 });
 
 const Payload = z.union([Reading, z.array(Reading).max(500)]);
