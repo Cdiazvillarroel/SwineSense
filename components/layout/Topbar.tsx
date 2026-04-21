@@ -1,8 +1,8 @@
 'use client';
 
 import { ChevronDown, LogOut, User } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useTransition } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Site } from '@/lib/types/domain';
 import { cn } from '@/lib/utils/cn';
@@ -13,6 +13,9 @@ import { cn } from '@/lib/utils/cn';
  * Contains the site switcher (left) and the user menu (right).
  * Site selection is persisted via URL search param `?site=<id>` so it
  * survives navigation and is shareable.
+ *
+ * Site selection uses optimistic local state so the UI updates
+ * instantly while the server-side page re-renders in the background.
  */
 
 interface TopbarProps {
@@ -23,19 +26,34 @@ interface TopbarProps {
 
 export function Topbar({ sites, currentSiteId, userEmail }: TopbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const currentSite =
-    sites.find((s) => s.id === currentSiteId) ?? null;
+  // Optimistic local state — instant UI feedback, synced to the server
+  // prop when navigation completes.
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(currentSiteId);
+
+  useEffect(() => {
+    setSelectedSiteId(currentSiteId);
+  }, [currentSiteId]);
+
+  const selectedSite = sites.find((s) => s.id === selectedSiteId) ?? null;
 
   function selectSite(siteId: string | null) {
-    const params = new URLSearchParams(window.location.search);
+    // 1. Update local UI immediately — user sees feedback with zero latency
+    setSelectedSiteId(siteId);
+
+    // 2. Build new URL preserving other params (metric, days, page, etc.)
+    const params = new URLSearchParams(searchParams.toString());
     if (siteId) params.set('site', siteId);
     else params.delete('site');
 
+    // 3. Fire navigation in the background — replace (not push) so filter
+    //    changes don't pollute history. scroll: false keeps the viewport.
     startTransition(() => {
-      router.push(`${window.location.pathname}?${params.toString()}`);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     });
   }
 
@@ -52,7 +70,7 @@ export function Topbar({ sites, currentSiteId, userEmail }: TopbarProps) {
       <div className="flex items-center gap-4">
         <SiteSwitcher
           sites={sites}
-          currentSite={currentSite}
+          selectedSite={selectedSite}
           onChange={selectSite}
           loading={isPending}
         />
@@ -99,68 +117,13 @@ export function Topbar({ sites, currentSiteId, userEmail }: TopbarProps) {
 
 interface SiteSwitcherProps {
   sites: Site[];
-  currentSite: Site | null;
+  selectedSite: Site | null;
   onChange: (siteId: string | null) => void;
   loading?: boolean;
 }
 
-function SiteSwitcher({ sites, currentSite, onChange, loading }: SiteSwitcherProps) {
+function SiteSwitcher({ sites, selectedSite, onChange, loading }: SiteSwitcherProps) {
   const [open, setOpen] = useState(false);
+  const selectedId = selectedSite?.id ?? null;
 
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          'flex items-center gap-2 rounded-btn border border-surface-border bg-surface-card px-3 py-1.5 text-sm',
-          'hover:border-brand-orange/40',
-          loading && 'opacity-60',
-        )}
-      >
-        <span className="label-badge">Site</span>
-        <span className="font-semibold text-ink-primary">
-          {currentSite?.name ?? 'All sites'}
-        </span>
-        <ChevronDown className="h-4 w-4 text-ink-muted" />
-      </button>
-
-      {open && (
-        <div
-          className="absolute left-0 mt-2 w-72 rounded-card border border-surface-border bg-surface-card p-1 shadow-card"
-          onMouseLeave={() => setOpen(false)}
-        >
-          <button
-            onClick={() => {
-              onChange(null);
-              setOpen(false);
-            }}
-            className={cn(
-              'flex w-full items-center gap-2 rounded-btn px-3 py-2 text-sm hover:bg-surface-elevated',
-              !currentSite && 'bg-surface-elevated',
-            )}
-          >
-            <span className="h-2 w-2 rounded-full bg-brand-orange" />
-            All sites
-          </button>
-          {sites.map((site) => (
-            <button
-              key={site.id}
-              onClick={() => {
-                onChange(site.id);
-                setOpen(false);
-              }}
-              className={cn(
-                'flex w-full items-center justify-between gap-2 rounded-btn px-3 py-2 text-sm hover:bg-surface-elevated',
-                currentSite?.id === site.id && 'bg-surface-elevated',
-              )}
-            >
-              <span className="truncate text-ink-primary">{site.name}</span>
-              <span className="text-xs text-ink-muted">{site.totalAnimals} animals</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+  re
