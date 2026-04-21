@@ -5,12 +5,14 @@ import { sitesRepo } from '@/lib/db';
 
 export const metadata = { title: 'Trends' };
 
+interface SearchParams {
+  site?: string;
+  metric?: string;
+  days?: string;
+}
+
 interface PageProps {
-  searchParams: {
-    site?: string;
-    metric?: string;
-    days?: string;
-  };
+  searchParams: Promise<SearchParams>;
 }
 
 type MetricDef = {
@@ -29,7 +31,8 @@ const METRICS: Record<string, MetricDef> = {
   heat_stress_hours:{ label: 'Heat stress hours',key: 'heat_stress_hours',kind: 'environment', unit: 'h' },
 };
 
-export default async function TrendsPage({ searchParams }: PageProps) {
+export default async function TrendsPage(props: PageProps) {
+  const searchParams = await props.searchParams;
   const metricKey = searchParams.metric ?? 'avg_body_temp';
   const metric = METRICS[metricKey] ?? METRICS.avg_body_temp!;
   const days = Math.min(180, Math.max(7, Number(searchParams.days ?? 30)));
@@ -103,7 +106,7 @@ function MetricSelector({
       {Object.entries(METRICS).map(([key, m]) => {
         const active = key === current;
         return (
-          <a
+          
             key={key}
             href={`?site=${siteId}&metric=${key}&days=${days}`}
             className={
@@ -120,7 +123,7 @@ function MetricSelector({
       <span className="mx-2 h-6 w-px bg-surface-border" />
       <span className="label-badge mr-1">Range</span>
       {[7, 30, 90].map((d) => (
-        <a
+        
           key={d}
           href={`?site=${siteId}&metric=${current}&days=${d}`}
           className={
