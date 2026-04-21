@@ -33,14 +33,16 @@ const TONE_META: Record<Tone, { emoji: string; label: string; className: string 
   },
 };
 
-interface PageProps {
-  searchParams: {
-    site?: string;
-    date?: string;
-  };
+interface SearchParams {
+  site?: string;
+  date?: string;
 }
 
-async function loadPageData(params: PageProps['searchParams']) {
+interface PageProps {
+  searchParams: Promise<SearchParams>;
+}
+
+async function loadPageData(params: SearchParams) {
   const sb = createClient();
 
   const [sitesRes, userId, members, currentUserRes] = await Promise.all([
@@ -54,7 +56,7 @@ async function loadPageData(params: PageProps['searchParams']) {
     sb.auth.getUser(),
   ]);
 
-  const sites = sitesRes.data ?? [];
+  const sites: { id: string; site_name: string }[] = sitesRes.data ?? [];
   if (sites.length === 0) {
     return { sites: [], site: null, date: null, dates: [], digest: null, actions: [], members, currentUserId: userId, currentUserEmail: null };
   }
@@ -188,7 +190,8 @@ async function loadPageData(params: PageProps['searchParams']) {
   };
 }
 
-export default async function AiInsightsPage({ searchParams }: PageProps) {
+export default async function AiInsightsPage(props: PageProps) {
+  const searchParams = await props.searchParams;
   const data = await loadPageData(searchParams);
   const { sites, site, date, dates, digest, actions, members, currentUserId, currentUserEmail } = data;
 
