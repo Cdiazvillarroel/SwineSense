@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
+import type { TableUpdate } from '@/lib/database';
 import type {
   Alert,
   AlertSeverity,
@@ -184,7 +185,7 @@ export async function updateAlertStatus(
   status: AlertStatus,
 ): Promise<void> {
   const supabase = createClient();
-  const patch: Record<string, unknown> = { status };
+  const patch: TableUpdate<'alerts'> = { status };
   if (status === 'Closed') patch.closed_timestamp = new Date().toISOString();
 
   const { error } = await supabase.from('alerts').update(patch).eq('id', id);
