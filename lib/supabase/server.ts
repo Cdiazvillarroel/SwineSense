@@ -1,8 +1,5 @@
-import {
-  createServerClient,
-  type CookieOptions,
-} from '@supabase/ssr';
-import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import type { Database } from '@/lib/database';
 
 /**
@@ -11,17 +8,9 @@ import type { Database } from '@/lib/database';
  * cookies and impersonates them on every query).
  *
  * Typed with `Database` so all CRUD is strictly type-checked.
- *
- * Next 15 note: `cookies()` became async. This file uses the official
- * `UnsafeUnwrappedCookies` escape hatch so that every caller can keep using
- * `const sb = createClient()` without adding an `await`. This emits a
- * dev-only warning but does NOT break production, and is supported through
- * Next 15.x. When Next 16 arrives this path stops working — at that point
- * we migrate to proper async (cookies = await cookies(), createClient async,
- * await createClient() at every call site).
  */
 export function createClient() {
-  const cookieStore = cookies() as unknown as UnsafeUnwrappedCookies;
+  const cookieStore = cookies();
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
