@@ -6,14 +6,16 @@ import type { AlertSeverity, AlertStatus } from '@/lib/types/domain';
 
 export const metadata = { title: 'Alerts' };
 
+interface SearchParams {
+  site?: string;
+  severity?: string;
+  status?: string;
+  page?: string;
+  search?: string;
+}
+
 interface PageProps {
-  searchParams: {
-    site?: string;
-    severity?: string;
-    status?: string;
-    page?: string;
-    search?: string;
-  };
+  searchParams: Promise<SearchParams>;
 }
 
 const SEVERITIES = new Set<AlertSeverity>(['Low', 'Medium', 'High', 'Critical']);
@@ -25,9 +27,9 @@ function parseCsv<T extends string>(value: string | undefined, allowed: Set<T>):
   return parsed.length ? parsed : undefined;
 }
 
-export default async function AlertsPage({ searchParams }: PageProps) {
+export default async function AlertsPage(props: PageProps) {
+  const searchParams = await props.searchParams;
   const page = Math.max(1, Number(searchParams.page ?? 1));
-
   const result = await alertsRepo.listAlerts(
     {
       siteIds: searchParams.site ? [searchParams.site] : undefined,
@@ -38,9 +40,7 @@ export default async function AlertsPage({ searchParams }: PageProps) {
     page,
     25,
   );
-
   const totalPages = Math.ceil(result.count / result.pageSize);
-
   return (
     <div className="space-y-6">
       <header>
@@ -53,15 +53,12 @@ export default async function AlertsPage({ searchParams }: PageProps) {
           a recommended action.
         </p>
       </header>
-
       <AlertFilters />
-
       <Card>
         <CardContent className="pt-6">
           <AlertTable alerts={result.rows} />
         </CardContent>
       </Card>
-
       {totalPages > 1 && <Pagination currentPage={page} totalPages={totalPages} />}
     </div>
   );
@@ -81,7 +78,7 @@ function Pagination({
       </span>
       <div className="flex gap-2">
         {currentPage > 1 && (
-          <a
+          
             href={`?page=${currentPage - 1}`}
             className="rounded-btn border border-surface-border px-3 py-1 hover:border-brand-orange/40"
           >
@@ -89,7 +86,7 @@ function Pagination({
           </a>
         )}
         {currentPage < totalPages && (
-          <a
+          
             href={`?page=${currentPage + 1}`}
             className="rounded-btn border border-surface-border px-3 py-1 hover:border-brand-orange/40"
           >
