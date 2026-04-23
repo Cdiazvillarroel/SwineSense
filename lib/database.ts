@@ -1,14 +1,3 @@
-/**
- * Supabase-generated types.
- *
- * This file is auto-generated. Do not edit manually.
- * Regenerate with:
- *
- *   npm run gen:types
- *
- * (or via the Supabase MCP tool `generate_typescript_types` in development)
- */
-
 export type Json =
   | string
   | number
@@ -18,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
       ai_processing_log: {
@@ -54,7 +48,15 @@ export type Database = {
           output_tokens?: number | null
           status?: Database["public"]["Enums"]["ai_response_status"] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_processing_log_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       alert_rules: {
         Row: {
@@ -192,7 +194,36 @@ export type Database = {
           trigger_reason?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "alerts_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_pen_id_fkey"
+            columns: ["pen_id"]
+            isOneToOne: false
+            referencedRelation: "pens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       animal_daily_avg: {
         Row: {
@@ -279,7 +310,29 @@ export type Database = {
           trend_feed?: string | null
           trend_temp?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "animal_daily_avg_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animal_daily_avg_pen_id_fkey"
+            columns: ["pen_id"]
+            isOneToOne: false
+            referencedRelation: "pens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animal_daily_avg_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       animals: {
         Row: {
@@ -333,7 +386,29 @@ export type Database = {
           updated_at?: string | null
           weight_kg?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "animals_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animals_pen_id_fkey"
+            columns: ["pen_id"]
+            isOneToOne: false
+            referencedRelation: "pens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animals_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       devices: {
         Row: {
@@ -390,7 +465,22 @@ export type Database = {
           site_id?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "devices_pen_id_fkey"
+            columns: ["pen_id"]
+            isOneToOne: false
+            referencedRelation: "pens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "devices_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       digest_action_evidence: {
         Row: {
@@ -432,7 +522,22 @@ export type Database = {
           uploaded_at?: string
           uploaded_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "digest_action_evidence_action_item_id_fkey"
+            columns: ["action_item_id"]
+            isOneToOne: false
+            referencedRelation: "digest_action_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digest_action_evidence_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       digest_action_items: {
         Row: {
@@ -480,7 +585,29 @@ export type Database = {
           summary_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "digest_action_items_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digest_action_items_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "site_daily_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digest_action_items_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "site_daily_summaries_latest"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       environment_daily_avg: {
         Row: {
@@ -552,7 +679,29 @@ export type Database = {
           trend_temp?: string | null
           ventilation_issues_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "environment_daily_avg_kpi_id_fkey"
+            columns: ["kpi_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "environment_daily_avg_pen_id_fkey"
+            columns: ["pen_id"]
+            isOneToOne: false
+            referencedRelation: "pens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "environment_daily_avg_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       environment_raw: {
         Row: {
@@ -594,7 +743,29 @@ export type Database = {
           timestamp?: string
           ventilation_score?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "environment_raw_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "environment_raw_pen_id_fkey"
+            columns: ["pen_id"]
+            isOneToOne: false
+            referencedRelation: "pens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "environment_raw_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       events: {
         Row: {
@@ -627,7 +798,29 @@ export type Database = {
           pen_id?: string | null
           site_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_pen_id_fkey"
+            columns: ["pen_id"]
+            isOneToOne: false
+            referencedRelation: "pens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       kpi_overview: {
         Row: {
@@ -717,7 +910,29 @@ export type Database = {
           site_id?: string
           sites_monitored?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "kpi_overview_highest_risk_animal_fkey"
+            columns: ["highest_risk_animal"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpi_overview_highest_risk_pen_fkey"
+            columns: ["highest_risk_pen"]
+            isOneToOne: false
+            referencedRelation: "pens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpi_overview_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications_log: {
         Row: {
@@ -750,7 +965,15 @@ export type Database = {
           sent_at?: string | null
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_log_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       organizations: {
         Row: {
@@ -831,7 +1054,15 @@ export type Database = {
           ventilation_type?: string | null
           water_source?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pens_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_daily_summaries: {
         Row: {
@@ -903,7 +1134,15 @@ export type Database = {
           things_to_check?: Json
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "site_daily_summaries_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_notification_channels: {
         Row: {
@@ -933,7 +1172,15 @@ export type Database = {
           recipient?: string
           site_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "site_notification_channels_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sites: {
         Row: {
@@ -990,9 +1237,262 @@ export type Database = {
           total_animals?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       telemetry_raw: {
+        Row: {
+          activity: number | null
+          animal_id: string | null
+          battery: number | null
+          body_temp_c: number | null
+          created_at: string | null
+          device_id: string | null
+          feed_intake_g: number | null
+          feed_visits: number | null
+          id: string
+          pen_id: string | null
+          raw_payload: Json | null
+          signal: number | null
+          site_id: string
+          timestamp: string
+          water_intake_ml: number | null
+        }
+        Insert: {
+          activity?: number | null
+          animal_id?: string | null
+          battery?: number | null
+          body_temp_c?: number | null
+          created_at?: string | null
+          device_id?: string | null
+          feed_intake_g?: number | null
+          feed_visits?: number | null
+          id?: string
+          pen_id?: string | null
+          raw_payload?: Json | null
+          signal?: number | null
+          site_id: string
+          timestamp: string
+          water_intake_ml?: number | null
+        }
+        Update: {
+          activity?: number | null
+          animal_id?: string | null
+          battery?: number | null
+          body_temp_c?: number | null
+          created_at?: string | null
+          device_id?: string | null
+          feed_intake_g?: number | null
+          feed_visits?: number | null
+          id?: string
+          pen_id?: string | null
+          raw_payload?: Json | null
+          signal?: number | null
+          site_id?: string
+          timestamp?: string
+          water_intake_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telemetry_raw_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemetry_raw_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemetry_raw_pen_id_fkey"
+            columns: ["pen_id"]
+            isOneToOne: false
+            referencedRelation: "pens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "telemetry_raw_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      telemetry_raw_2026_02: {
+        Row: {
+          activity: number | null
+          animal_id: string | null
+          battery: number | null
+          body_temp_c: number | null
+          created_at: string | null
+          device_id: string | null
+          feed_intake_g: number | null
+          feed_visits: number | null
+          id: string
+          pen_id: string | null
+          raw_payload: Json | null
+          signal: number | null
+          site_id: string
+          timestamp: string
+          water_intake_ml: number | null
+        }
+        Insert: {
+          activity?: number | null
+          animal_id?: string | null
+          battery?: number | null
+          body_temp_c?: number | null
+          created_at?: string | null
+          device_id?: string | null
+          feed_intake_g?: number | null
+          feed_visits?: number | null
+          id?: string
+          pen_id?: string | null
+          raw_payload?: Json | null
+          signal?: number | null
+          site_id: string
+          timestamp: string
+          water_intake_ml?: number | null
+        }
+        Update: {
+          activity?: number | null
+          animal_id?: string | null
+          battery?: number | null
+          body_temp_c?: number | null
+          created_at?: string | null
+          device_id?: string | null
+          feed_intake_g?: number | null
+          feed_visits?: number | null
+          id?: string
+          pen_id?: string | null
+          raw_payload?: Json | null
+          signal?: number | null
+          site_id?: string
+          timestamp?: string
+          water_intake_ml?: number | null
+        }
+        Relationships: []
+      }
+      telemetry_raw_2026_03: {
+        Row: {
+          activity: number | null
+          animal_id: string | null
+          battery: number | null
+          body_temp_c: number | null
+          created_at: string | null
+          device_id: string | null
+          feed_intake_g: number | null
+          feed_visits: number | null
+          id: string
+          pen_id: string | null
+          raw_payload: Json | null
+          signal: number | null
+          site_id: string
+          timestamp: string
+          water_intake_ml: number | null
+        }
+        Insert: {
+          activity?: number | null
+          animal_id?: string | null
+          battery?: number | null
+          body_temp_c?: number | null
+          created_at?: string | null
+          device_id?: string | null
+          feed_intake_g?: number | null
+          feed_visits?: number | null
+          id?: string
+          pen_id?: string | null
+          raw_payload?: Json | null
+          signal?: number | null
+          site_id: string
+          timestamp: string
+          water_intake_ml?: number | null
+        }
+        Update: {
+          activity?: number | null
+          animal_id?: string | null
+          battery?: number | null
+          body_temp_c?: number | null
+          created_at?: string | null
+          device_id?: string | null
+          feed_intake_g?: number | null
+          feed_visits?: number | null
+          id?: string
+          pen_id?: string | null
+          raw_payload?: Json | null
+          signal?: number | null
+          site_id?: string
+          timestamp?: string
+          water_intake_ml?: number | null
+        }
+        Relationships: []
+      }
+      telemetry_raw_2026_04: {
+        Row: {
+          activity: number | null
+          animal_id: string | null
+          battery: number | null
+          body_temp_c: number | null
+          created_at: string | null
+          device_id: string | null
+          feed_intake_g: number | null
+          feed_visits: number | null
+          id: string
+          pen_id: string | null
+          raw_payload: Json | null
+          signal: number | null
+          site_id: string
+          timestamp: string
+          water_intake_ml: number | null
+        }
+        Insert: {
+          activity?: number | null
+          animal_id?: string | null
+          battery?: number | null
+          body_temp_c?: number | null
+          created_at?: string | null
+          device_id?: string | null
+          feed_intake_g?: number | null
+          feed_visits?: number | null
+          id?: string
+          pen_id?: string | null
+          raw_payload?: Json | null
+          signal?: number | null
+          site_id: string
+          timestamp: string
+          water_intake_ml?: number | null
+        }
+        Update: {
+          activity?: number | null
+          animal_id?: string | null
+          battery?: number | null
+          body_temp_c?: number | null
+          created_at?: string | null
+          device_id?: string | null
+          feed_intake_g?: number | null
+          feed_visits?: number | null
+          id?: string
+          pen_id?: string | null
+          raw_payload?: Json | null
+          signal?: number | null
+          site_id?: string
+          timestamp?: string
+          water_intake_ml?: number | null
+        }
+        Relationships: []
+      }
+      telemetry_raw_2026_05: {
         Row: {
           activity: number | null
           animal_id: string | null
@@ -1068,10 +1568,39 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_organizations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
+      kpi_risk_drivers: {
+        Row: {
+          alert_type: string | null
+          category: string | null
+          critical_count: number | null
+          high_count: number | null
+          low_count: number | null
+          medium_count: number | null
+          site_id: string | null
+          total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_daily_summaries_latest: {
         Row: {
           confidence: number | null
@@ -1088,7 +1617,15 @@ export type Database = {
           telegram_sent: boolean | null
           things_to_check: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "site_daily_summaries_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -1102,6 +1639,8 @@ export type Database = {
       }
       auth_user_orgs: { Args: never; Returns: string[] }
       auth_user_sites: { Args: never; Returns: string[] }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       sp_compute_daily_kpis: {
         Args: { p_date: string; p_site_id: string }
         Returns: undefined
@@ -1146,16 +1685,168 @@ export type Database = {
       signal_status: "online" | "degraded" | "offline"
       user_role: "owner" | "manager" | "vet" | "operator" | "viewer"
     }
-    CompositeTypes: { [_ in never]: never }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
 
-// Convenience shortcuts used by server actions and repositories
-export type TableRow<T extends keyof Database['public']['Tables']> =
-  Database['public']['Tables'][T]['Row']
-export type TableInsert<T extends keyof Database['public']['Tables']> =
-  Database['public']['Tables'][T]['Insert']
-export type TableUpdate<T extends keyof Database['public']['Tables']> =
-  Database['public']['Tables'][T]['Update']
-export type Enum<T extends keyof Database['public']['Enums']> =
-  Database['public']['Enums'][T]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      action_item_status: ["open", "in_progress", "done", "skipped"],
+      ai_response_status: ["pending", "success", "failed", "skipped"],
+      alert_severity: ["Low", "Medium", "High", "Critical"],
+      alert_status: ["Open", "In Progress", "Closed", "Snoozed"],
+      device_type: [
+        "ear_tag",
+        "env_probe",
+        "silo_sensor",
+        "water_flow",
+        "camera",
+        "gateway",
+      ],
+      digest_status: ["pending", "success", "failed"],
+      digest_tone: ["all_good", "watch", "action_required"],
+      evidence_kind: ["photo", "document", "text"],
+      health_status: [
+        "healthy",
+        "monitoring",
+        "sick",
+        "recovering",
+        "deceased",
+      ],
+      notification_channel: ["telegram", "whatsapp", "email", "sms"],
+      pen_type: [
+        "gestation",
+        "farrowing",
+        "nursery",
+        "grower",
+        "finisher",
+        "boar",
+        "isolation",
+      ],
+      priority_level: ["Routine", "Attention", "Urgent", "Immediate"],
+      risk_level: ["Low", "Moderate", "High", "Severe"],
+      signal_status: ["online", "degraded", "offline"],
+      user_role: ["owner", "manager", "vet", "operator", "viewer"],
+    },
+  },
+} as const
