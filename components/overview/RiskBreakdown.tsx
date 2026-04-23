@@ -29,7 +29,7 @@ import {
   type RiskCategory,
   type RiskCategoryBreakdown,
   type RiskDriver,
-} from '@/lib/db/kpi';
+} from '@/lib/types/risk';
 import type { RiskLevel } from '@/lib/types/domain';
 
 /**
@@ -42,6 +42,9 @@ import type { RiskLevel } from '@/lib/types/domain';
  *
  * Selecting a category is purely client-side (useState); the 4 series are
  * pre-fetched on the server so switching is instant.
+ *
+ * NOTE: Imports types from `@/lib/types/risk` (NOT from `@/lib/db/kpi`)
+ * because this is a Client Component and lib/db/kpi has `server-only`.
  */
 
 const CATEGORY_COLORS: Record<RiskCategory, { hex: string; rgb: string }> = {
