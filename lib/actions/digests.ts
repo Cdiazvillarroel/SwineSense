@@ -75,7 +75,7 @@ export async function updateActionStatus(
     const status = StatusSchema.parse(statusRaw);
     const { user, sb } = await requireUser();
 
-    const patch: TableUpdate<'digest_action_items'> = {
+    const patch: TablesUpdate<'digest_action_items'> = {
       status,
       updated_at: new Date().toISOString(),
     };
