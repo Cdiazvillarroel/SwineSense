@@ -16,7 +16,7 @@
 
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
-import type { Database, TableUpdate } from '@/lib/database';
+import type { Database, TablesUpdate } from '@/lib/database';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
