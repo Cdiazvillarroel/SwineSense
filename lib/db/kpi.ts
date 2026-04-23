@@ -2,6 +2,13 @@ import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
 import type { KpiOverview, RiskLevel } from '@/lib/types/domain';
+import type {
+  ActionItemSummary,
+  FarmRiskScore,
+  RiskCategory,
+  RiskCategoryBreakdown,
+  RiskDriver,
+} from '@/lib/types/risk';
 
 /**
  * KPI repository.
@@ -15,7 +22,30 @@ import type { KpiOverview, RiskLevel } from '@/lib/types/domain';
  *
  * All numeric indices (health_risk_index, etc.) are on a 0-10 scale as
  * written by sp_compute_daily_kpis.
+ *
+ * NOTE: Risk-breakdown TYPES and CONSTANTS live in lib/types/risk.ts so
+ * Client Components can import them without dragging in `server-only`.
+ * They're re-exported below for callers that prefer to import everything
+ * from `@/lib/db/kpi`.
  */
+
+// =============================================================================
+//  Re-export client-safe types and constants
+// =============================================================================
+
+export type {
+  ActionItemSummary,
+  FarmRiskScore,
+  RiskCategory,
+  RiskCategoryBreakdown,
+  RiskDriver,
+} from '@/lib/types/risk';
+
+export {
+  RISK_CATEGORY_LABELS,
+  RISK_CATEGORY_DESCRIPTIONS,
+  DRIVER_LABELS,
+} from '@/lib/types/risk';
 
 // =============================================================================
 //  Original KPI helpers
@@ -206,72 +236,6 @@ export async function getKpiSeries(
 //  separates the single composite risk into 4 categories and surfaces the
 //  alert drivers behind each one.
 // =============================================================================
-
-export type RiskCategory = 'health' | 'environment' | 'feed' | 'operational';
-
-export interface RiskDriver {
-  alertType: string;
-  total: number;
-  critical: number;
-  high: number;
-  medium: number;
-  low: number;
-}
-
-export interface RiskCategoryBreakdown {
-  category: RiskCategory;
-  score: number;          // 0-10
-  status: RiskLevel;
-  drivers: RiskDriver[];
-}
-
-export interface FarmRiskScore {
-  overall: number;        // 0-10, average of the 4 categories
-  status: RiskLevel;
-  categories: RiskCategoryBreakdown[];
-}
-
-export interface ActionItemSummary {
-  id: string;
-  siteId: string;
-  siteName: string;
-  date: string;           // YYYY-MM-DD
-  actionText: string;
-  status: 'open' | 'in_progress' | 'done' | 'skipped';
-  assignedTo: string | null;
-  assigneeEmail: string | null;
-  notes: string | null;
-  completedAt: string | null;
-  updatedAt: string;
-}
-
-// Static metadata re-exported for the client component
-export const RISK_CATEGORY_LABELS: Record<RiskCategory, string> = {
-  health: 'Health',
-  environment: 'Environment',
-  feed: 'Feed',
-  operational: 'Operational',
-};
-
-export const RISK_CATEGORY_DESCRIPTIONS: Record<RiskCategory, string> = {
-  health: 'Animal welfare & disease risk',
-  environment: 'Climate, ventilation & THI',
-  feed: 'Feed intake & silo levels',
-  operational: 'Devices & infrastructure',
-};
-
-export const DRIVER_LABELS: Record<string, string> = {
-  fever_risk: 'Fever risk',
-  combined_risk: 'Combined health risk',
-  environment: 'Climate alerts',
-  heat_stress_severe: 'Severe heat stress',
-  heat_stress_moderate: 'Heat stress',
-  heat_stress_mild: 'Mild heat stress',
-  feed_drop: 'Feed intake drop',
-  silo: 'Silo level low',
-  low_growth: 'Low growth',
-  device: 'Device fault',
-};
 
 // -----------------------------------------------------------------------------
 // Internal raw row types
