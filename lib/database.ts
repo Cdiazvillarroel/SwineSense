@@ -706,6 +706,7 @@ export type Database = {
       environment_raw: {
         Row: {
           ambient_temp_c: number | null
+          ammonia_ppm: number | null
           created_at: string | null
           device_id: string | null
           humidity_pct: number | null
@@ -719,6 +720,7 @@ export type Database = {
         }
         Insert: {
           ambient_temp_c?: number | null
+          ammonia_ppm?: number | null
           created_at?: string | null
           device_id?: string | null
           humidity_pct?: number | null
@@ -732,6 +734,7 @@ export type Database = {
         }
         Update: {
           ambient_temp_c?: number | null
+          ammonia_ppm?: number | null
           created_at?: string | null
           device_id?: string | null
           humidity_pct?: number | null
