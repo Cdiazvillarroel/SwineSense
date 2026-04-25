@@ -15,6 +15,47 @@ import { computeThi, getThiCategory, type ThiCategory } from '@/lib/weather';
  */
 
 // ---------------------------------------------------------------------------
+// Internal helpers for queries that hit columns missing from generated types.
+//
+// `ammonia_ppm` was added via migration but the local `lib/database.ts` types
+// haven't been regenerated yet. Until then we cast through this minimal shape
+// to bypass the typed client. Run the type generator to remove these casts:
+//   npx supabase gen types typescript --project-id beruskdysooyzwyhucga \
+//     --schema public > lib/database.ts
+// ---------------------------------------------------------------------------
+
+interface UntypedQuery
+  extends PromiseLike<{ data: unknown[] | null; error: Error | null }> {
+  select: (cols: string) => UntypedQuery;
+  eq: (col: string, val: unknown) => UntypedQuery;
+  gte: (col: string, val: unknown) => UntypedQuery;
+  order: (col: string, opts?: { ascending: boolean }) => UntypedQuery;
+}
+interface UntypedClient {
+  from: (table: string) => UntypedQuery;
+}
+
+interface EnvRowKpi {
+  site_id: string | null;
+  ambient_temp_c: number | null;
+  humidity_pct: number | null;
+  thi: number | null;
+  ammonia_ppm: number | null;
+  ventilation_score: number | null;
+  timestamp: string;
+}
+
+interface EnvRowDetail {
+  pen_id: string | null;
+  ambient_temp_c: number | null;
+  humidity_pct: number | null;
+  thi: number | null;
+  ammonia_ppm: number | null;
+  ventilation_score: number | null;
+  timestamp: string;
+}
+
+// ---------------------------------------------------------------------------
 // Existing functions — preserved for backward compatibility
 // ---------------------------------------------------------------------------
 
@@ -197,7 +238,10 @@ export async function getSitesKpis(): Promise<SitesKpis> {
         .from('devices')
         .select('site_id, signal_status, active')
         .eq('active', true),
-      sb
+      // Cast to bypass typed client — ammonia_ppm exists in DB but not yet
+      // in the generated types in lib/database.ts. Re-run the type generator
+      // to restore strict typing on this query.
+      (sb as unknown as UntypedClient)
         .from('environment_raw')
         .select(
           'site_id, ambient_temp_c, humidity_pct, thi, ammonia_ppm, ventilation_score, timestamp',
@@ -228,7 +272,7 @@ export async function getSitesKpis(): Promise<SitesKpis> {
   }
 
   // Climate aggregates from environment_raw
-  const env = envRes.data ?? [];
+  const env = (envRes.data ?? []) as EnvRowKpi[];
   const temps = env
     .map((r) => Number(r.ambient_temp_c))
     .filter((n) => Number.isFinite(n));
@@ -365,7 +409,8 @@ export async function getSitesGrid(): Promise<SiteCardData[]> {
         .from('devices')
         .select('site_id, signal_status, active')
         .eq('active', true),
-      sb
+      // Cast to bypass typed client (see comment in getSitesKpis)
+      (sb as unknown as UntypedClient)
         .from('environment_raw')
         .select(
           'site_id, ambient_temp_c, humidity_pct, thi, ammonia_ppm, ventilation_score, timestamp',
@@ -393,17 +438,8 @@ export async function getSitesGrid(): Promise<SiteCardData[]> {
   }
 
   // Group env readings by site, sorted desc by timestamp
-  type EnvRow = {
-    site_id: string | null;
-    ambient_temp_c: number | null;
-    humidity_pct: number | null;
-    thi: number | null;
-    ammonia_ppm: number | null;
-    ventilation_score: number | null;
-    timestamp: string;
-  };
-  const envBySite = new Map<string, EnvRow[]>();
-  for (const r of (envRes.data ?? []) as EnvRow[]) {
+  const envBySite = new Map<string, EnvRowKpi[]>();
+  for (const r of (envRes.data ?? []) as EnvRowKpi[]) {
     if (!r.site_id) continue;
     const arr = envBySite.get(r.site_id) ?? [];
     arr.push(r);
@@ -555,7 +591,8 @@ export async function getSiteDetail(
       .from('devices')
       .select('signal_status, active')
       .eq('site_id', id),
-    sb
+    // Cast to bypass typed client (see comment in getSitesKpis)
+    (sb as unknown as UntypedClient)
       .from('environment_raw')
       .select(
         'pen_id, ambient_temp_c, humidity_pct, thi, ammonia_ppm, ventilation_score, timestamp',
@@ -584,7 +621,7 @@ export async function getSiteDetail(
   ]);
 
   // Bin env into 2hr buckets + compute hourly THI for sparkline
-  const env = envRes.data ?? [];
+  const env = (envRes.data ?? []) as EnvRowDetail[];
   const bucketMap = new Map<
     string,
     {
