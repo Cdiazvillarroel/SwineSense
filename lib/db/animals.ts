@@ -182,7 +182,9 @@ export async function getAnimalsKpis(): Promise<AnimalsKpis> {
       0,
       Math.min(bucketEdges.length - 1, Math.floor((t - 37.0) / 0.2)),
     );
-    const key = bucketEdges[idx].toFixed(1);
+    // idx is mathematically guaranteed to be in [0, bucketEdges.length-1]
+    const edge = bucketEdges[idx]!;
+    const key = edge.toFixed(1);
     tempBuckets.set(key, (tempBuckets.get(key) ?? 0) + 1);
   }
 
