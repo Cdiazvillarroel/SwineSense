@@ -595,13 +595,17 @@ export async function getAnimalDetail(
         }
       : null,
     series_7d,
-    open_alerts: (alertsRes.data ?? []).map((a) => ({
-      id: a.id,
-      timestamp: a.timestamp,
-      severity: a.severity as AlertSeverity,
-      alert_type: a.alert_type,
-      short_message: a.short_message,
-      recommended_action: a.recommended_action,
-    })),
+    open_alerts: (alertsRes.data ?? [])
+      .filter(
+        (a): a is typeof a & { timestamp: string } => a.timestamp !== null,
+      )
+      .map((a) => ({
+        id: a.id,
+        timestamp: a.timestamp,
+        severity: a.severity as AlertSeverity,
+        alert_type: a.alert_type,
+        short_message: a.short_message,
+        recommended_action: a.recommended_action,
+      })),
   };
 }
