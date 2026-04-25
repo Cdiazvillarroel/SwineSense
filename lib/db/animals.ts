@@ -5,14 +5,20 @@ import { createClient } from '@/lib/supabase/server';
 // Types
 // ---------------------------------------------------------------------------
 
-export type HealthStatus =
-  | 'healthy'
-  | 'monitoring'
-  | 'sick'
-  | 'recovering'
-  | 'deceased';
+export const HEALTH_STATUSES = [
+  'healthy',
+  'monitoring',
+  'sick',
+  'recovering',
+  'deceased',
+] as const;
+export type HealthStatus = (typeof HEALTH_STATUSES)[number];
 
 export type AlertSeverity = 'Low' | 'Medium' | 'High' | 'Critical';
+
+function isHealthStatus(v: string): v is HealthStatus {
+  return (HEALTH_STATUSES as readonly string[]).includes(v);
+}
 
 export interface AnimalsKpis {
   herd: {
@@ -297,7 +303,7 @@ export async function getAnimalsList(filters: AnimalListFilters) {
   if (filters.site && sitesMap.has(filters.site)) {
     q = q.eq('site_id', filters.site);
   }
-  if (filters.health) {
+  if (filters.health && isHealthStatus(filters.health)) {
     q = q.eq('health_status', filters.health);
   }
   if (filters.search) {
