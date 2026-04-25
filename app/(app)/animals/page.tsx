@@ -1,23 +1,34 @@
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
-import { createClient } from '@/lib/supabase/server';
+import {
+  getAnimalDetail,
+  getAnimalsKpis,
+  getAnimalsList,
+  HEALTH_STATUSES,
+} from '@/lib/db/animals';
+import { AnimalsKpis } from './animals-kpis';
+import { AnimalsTable } from './animals-table';
+import { AnimalDrawer } from './animal-drawer';
 
 export const dynamic = 'force-dynamic';
 
-const HEALTH_STATUSES = [
-  'healthy',
-  'monitoring',
-  'sick',
-  'recovering',
-  'deceased',
+const PEN_TYPES = [
+  'gestation',
+  'farrowing',
+  'nursery',
+  'grower',
+  'finisher',
+  'boar',
+  'isolation',
 ] as const;
-type HealthStatus = (typeof HEALTH_STATUSES)[number];
-
-const PAGE_SIZE = 50;
 
 interface SearchParams {
   site?: string;
+  pen_type?: string;
   health?: string;
+  has_alerts?: string;
+  search?: string;
+  animal?: string;
   page?: string;
 }
 
@@ -25,224 +36,186 @@ interface PageProps {
   searchParams: Promise<SearchParams>;
 }
 
-async function load(params: SearchParams) {
-  const sb = createClient();
-
-  const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
-
-  const sitesRes = await sb
-    .from('sites')
-    .select('id, site_name')
-    .is('deleted_at', null)
-    .order('site_name');
-  const sites = sitesRes.data ?? [];
-
-  let q = sb
-    .from('animals')
-    .select(
-      'id, tag_number, sex, birth_date, weight_kg, breed, health_status, active, pen_id, site_id',
-      { count: 'exact' }
-    )
-    .is('deleted_at', null)
-    .order('tag_number');
-
-  if (params.site && sites.some((s) => s.id === params.site)) {
-    q = q.eq('site_id', params.site);
-  }
-  if (
-    params.health &&
-    (HEALTH_STATUSES as readonly string[]).includes(params.health)
-  ) {
-    q = q.eq('health_status', params.health as HealthStatus);
-  }
-
-  const animalsRes = await q.range(from, to);
-  const animals = animalsRes.data ?? [];
-  const total = animalsRes.count ?? 0;
-
-  const penIds = Array.from(
-    new Set(animals.map((a) => a.pen_id).filter((v): v is string => !!v))
-  );
-  const pensRes = penIds.length
-    ? await sb.from('pens').select('id, pen_name').in('id', penIds)
-    : { data: [] as { id: string; pen_name: string }[] };
-
-  const pensMap = new Map<string, { id: string; pen_name: string }>(
-    (pensRes.data ?? []).map((p) => [p.id, p])
-  );
-  const sitesMap = new Map<string, { id: string; site_name: string }>(
-    sites.map((s) => [s.id, s])
-  );
-
-  return {
-    sites,
-    animals,
-    pensMap,
-    sitesMap,
-    total,
-    page,
-    pageSize: PAGE_SIZE,
-    totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
-  };
-}
-
 export default async function AnimalsPage(props: PageProps) {
-  const searchParams = await props.searchParams;
-  const { sites, animals, pensMap, sitesMap, total, page, pageSize, totalPages } =
-    await load(searchParams);
+  const sp = await props.searchParams;
+
+  const [kpis, list, detail] = await Promise.all([
+    getAnimalsKpis(),
+    getAnimalsList({
+      site: sp.site,
+      pen_type: sp.pen_type,
+      health: sp.health,
+      has_alerts: sp.has_alerts === '1',
+      search: sp.search,
+      page: parseInt(sp.page ?? '1', 10) || 1,
+    }),
+    sp.animal ? getAnimalDetail(sp.animal) : Promise.resolve(null),
+  ]);
+
+  const filterCount =
+    [sp.site, sp.pen_type, sp.health, sp.has_alerts, sp.search].filter(
+      Boolean,
+    ).length;
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="font-display text-section">Animals</h1>
         <p className="mt-1 text-sm text-ink-secondary">
-          {total} {total === 1 ? 'animal' : 'animals'} across your sites.
+          Group view across {kpis.herd.by_pen_type.length} pen types and{' '}
+          {list.sites.length} {list.sites.length === 1 ? 'site' : 'sites'}.
         </p>
       </header>
 
+      {/* KPI cards */}
+      <AnimalsKpis data={kpis} />
+
+      {/* Filters */}
       <form className="flex flex-wrap items-end gap-3" method="get">
+        <FilterSelect
+          name="site"
+          label="Site"
+          value={sp.site ?? ''}
+          options={list.sites.map((s) => ({ value: s.id, label: s.site_name }))}
+          allLabel="All sites"
+        />
+        <FilterSelect
+          name="pen_type"
+          label="Pen type"
+          value={sp.pen_type ?? ''}
+          options={(PEN_TYPES as readonly string[]).map((t) => ({
+            value: t,
+            label: t,
+          }))}
+          allLabel="All types"
+        />
+        <FilterSelect
+          name="health"
+          label="Health"
+          value={sp.health ?? ''}
+          options={(HEALTH_STATUSES as readonly string[]).map((h) => ({
+            value: h,
+            label: h,
+          }))}
+          allLabel="All"
+        />
         <div>
           <label
-            htmlFor="site"
+            htmlFor="search"
             className="block text-xs uppercase tracking-wider text-ink-muted"
           >
-            Site
+            Tag #
           </label>
-          <select
-            id="site"
-            name="site"
-            defaultValue={searchParams.site ?? ''}
-            className="mt-1 rounded-btn border border-surface-border bg-transparent px-3 py-1.5 text-sm"
-          >
-            <option value="">All sites</option>
-            {sites.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.site_name}
-              </option>
-            ))}
-          </select>
+          <input
+            id="search"
+            name="search"
+            type="text"
+            defaultValue={sp.search ?? ''}
+            placeholder="Search…"
+            className="mt-1 rounded-btn border border-surface-border bg-transparent px-3 py-1.5 text-sm placeholder:text-ink-muted"
+          />
         </div>
-        <div>
-          <label
-            htmlFor="health"
-            className="block text-xs uppercase tracking-wider text-ink-muted"
-          >
-            Health
-          </label>
-          <select
-            id="health"
-            name="health"
-            defaultValue={searchParams.health ?? ''}
-            className="mt-1 rounded-btn border border-surface-border bg-transparent px-3 py-1.5 text-sm"
-          >
-            <option value="">All</option>
-            {HEALTH_STATUSES.map((h) => (
-              <option key={h} value={h}>
-                {h}
-              </option>
-            ))}
-          </select>
-        </div>
+        <label className="flex cursor-pointer items-center gap-2 pb-1.5 text-sm text-ink-secondary">
+          <input
+            type="checkbox"
+            name="has_alerts"
+            value="1"
+            defaultChecked={sp.has_alerts === '1'}
+            className="h-4 w-4 accent-brand-orange"
+          />
+          With open alerts
+        </label>
         <button
           type="submit"
           className="rounded-btn border border-surface-border px-3 py-1.5 text-sm transition-colors hover:border-brand-orange/40"
         >
-          Apply filters
+          Apply
         </button>
-        {(searchParams.site || searchParams.health) && (
+        {filterCount > 0 && (
           <Link
             href="/animals"
-            className="rounded-btn px-3 py-1.5 text-sm text-ink-secondary hover:text-brand-orange"
+            className="rounded-btn px-3 py-1.5 text-sm text-ink-secondary transition-colors hover:text-brand-orange"
           >
-            Reset
+            Reset ({filterCount})
           </Link>
         )}
       </form>
 
+      {/* Table */}
       <Card>
         <CardContent className="p-0">
-          {animals.length === 0 ? (
-            <p className="px-6 py-10 text-center text-sm text-ink-muted">
-              No animals match the current filters.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-surface-border text-left text-xs uppercase tracking-wider text-ink-muted">
-                    <th className="px-4 py-2 font-medium">Tag</th>
-                    <th className="px-4 py-2 font-medium">Sex</th>
-                    <th className="px-4 py-2 font-medium">Breed</th>
-                    <th className="px-4 py-2 font-medium">Pen</th>
-                    <th className="px-4 py-2 font-medium">Site</th>
-                    <th className="px-4 py-2 text-right font-medium">Weight (kg)</th>
-                    <th className="px-4 py-2 font-medium">Health</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {animals.map((a) => {
-                    const pen = a.pen_id ? pensMap.get(a.pen_id) : undefined;
-                    const site = a.site_id ? sitesMap.get(a.site_id) : undefined;
-                    return (
-                      <tr
-                        key={a.id}
-                        className="border-b border-surface-border last:border-0"
-                      >
-                        <td className="px-4 py-2 font-mono text-ink-primary">
-                          {a.tag_number}
-                        </td>
-                        <td className="px-4 py-2 text-ink-secondary">
-                          {a.sex ?? '—'}
-                        </td>
-                        <td className="px-4 py-2 text-ink-secondary">
-                          {a.breed ?? '—'}
-                        </td>
-                        <td className="px-4 py-2 text-ink-secondary">
-                          {pen?.pen_name ?? '—'}
-                        </td>
-                        <td className="px-4 py-2 text-ink-secondary">
-                          {site?.site_name ?? '—'}
-                        </td>
-                        <td className="px-4 py-2 text-right text-ink-secondary tabular-nums">
-                          {a.weight_kg ?? '—'}
-                        </td>
-                        <td className="px-4 py-2">
-                          <HealthBadge status={a.health_status} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <AnimalsTable rows={list.rows} />
         </CardContent>
       </Card>
 
-      {totalPages > 1 && (
+      {/* Pagination */}
+      {list.totalPages > 1 && (
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
           <p className="text-ink-muted">
-            Page {page} of {totalPages} · Showing {Math.min(pageSize, animals.length)}{' '}
-            of {total}
+            Page {list.page} of {list.totalPages} · Showing{' '}
+            {Math.min(list.pageSize, list.rows.length)} of {list.total}
           </p>
           <div className="flex gap-2">
             <PageLink
-              page={page - 1}
-              disabled={page <= 1}
+              page={list.page - 1}
+              disabled={list.page <= 1}
               label="Previous"
-              searchParams={searchParams}
+              searchParams={sp}
             />
             <PageLink
-              page={page + 1}
-              disabled={page >= totalPages}
+              page={list.page + 1}
+              disabled={list.page >= list.totalPages}
               label="Next"
-              searchParams={searchParams}
+              searchParams={sp}
             />
           </div>
         </div>
       )}
+
+      {/* Drawer */}
+      {detail && <AnimalDrawer detail={detail} />}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Local helpers (server-side rendered filters)
+// ---------------------------------------------------------------------------
+
+function FilterSelect({
+  name,
+  label,
+  value,
+  options,
+  allLabel,
+}: {
+  name: string;
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  allLabel: string;
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={name}
+        className="block text-xs uppercase tracking-wider text-ink-muted"
+      >
+        {label}
+      </label>
+      <select
+        id={name}
+        name={name}
+        defaultValue={value}
+        className="mt-1 rounded-btn border border-surface-border bg-transparent px-3 py-1.5 text-sm capitalize"
+      >
+        <option value="">{allLabel}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value} className="capitalize">
+            {o.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -267,7 +240,10 @@ function PageLink({
   }
   const sp = new URLSearchParams();
   if (searchParams.site) sp.set('site', searchParams.site);
+  if (searchParams.pen_type) sp.set('pen_type', searchParams.pen_type);
   if (searchParams.health) sp.set('health', searchParams.health);
+  if (searchParams.has_alerts) sp.set('has_alerts', searchParams.has_alerts);
+  if (searchParams.search) sp.set('search', searchParams.search);
   sp.set('page', String(page));
   return (
     <Link
@@ -276,21 +252,5 @@ function PageLink({
     >
       {label}
     </Link>
-  );
-}
-
-function HealthBadge({ status }: { status: HealthStatus | string | null }) {
-  const map: Record<string, string> = {
-    healthy: 'border-emerald-400/40 text-emerald-400',
-    monitoring: 'border-amber-400/40 text-amber-400',
-    sick: 'border-rose-400/40 text-rose-400',
-    recovering: 'border-sky-400/40 text-sky-400',
-    deceased: 'border-ink-muted/40 text-ink-muted',
-  };
-  const cls = map[status ?? ''] ?? 'border-surface-border text-ink-secondary';
-  return (
-    <span className={'inline-flex items-center rounded-full border px-2 py-0.5 text-xs ' + cls}>
-      {status ?? '—'}
-    </span>
   );
 }
