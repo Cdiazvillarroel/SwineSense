@@ -1,8 +1,12 @@
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { createClient } from '@/lib/supabase/server';
-import { formatRelative } from '@/lib/utils/format';
+import {
+  getDeviceDetail,
+  getDevicesKpis,
+  getDevicesList,
+} from '@/lib/db/devices';
+import { DevicesKpisGrid } from './devices-kpis';
+import { DevicesTable } from './devices-table';
+import { DeviceDrawer } from './device-drawer';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,322 +21,209 @@ const DEVICE_TYPES = [
 
 const SIGNAL_STATUSES = ['online', 'degraded', 'offline'] as const;
 
-const PAGE_SIZE = 50;
-
 interface SearchParams {
   site?: string;
-  type?: string;
-  signal?: string;
+  pen?: string;
+  device_type?: string;
+  signal_status?: string;
+  low_battery?: string;
+  search?: string;
   page?: string;
+  device?: string;
 }
 
 interface PageProps {
   searchParams: Promise<SearchParams>;
 }
 
-async function load(params: SearchParams) {
-  const sb = createClient();
-
-  const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
-  const from = (page - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
-
-  const sitesRes = await sb
-    .from('sites')
-    .select('id, site_name')
-    .is('deleted_at', null)
-    .order('site_name');
-  const sites = sitesRes.data ?? [];
-
-  let q = sb
-    .from('devices')
-    .select(
-      'id, serial_number, device_type, model, battery_status, signal_status, last_seen, active, site_id, pen_id',
-      { count: 'exact' }
-    )
-    .order('last_seen', { ascending: false, nullsFirst: false });
-
-  if (params.site && sites.some((s) => s.id === params.site)) {
-    q = q.eq('site_id', params.site);
-  }
-  if (params.type && (DEVICE_TYPES as readonly string[]).includes(params.type)) {
-    q = q.eq('device_type', params.type as (typeof DEVICE_TYPES)[number]);
-  }
-  if (
-    params.signal &&
-    (SIGNAL_STATUSES as readonly string[]).includes(params.signal)
-  ) {
-    q = q.eq('signal_status', params.signal as (typeof SIGNAL_STATUSES)[number]);
-  }
-
-  const devicesRes = await q.range(from, to);
-  const devices = devicesRes.data ?? [];
-  const total = devicesRes.count ?? 0;
-
-  const penIds = Array.from(
-    new Set(devices.map((d) => d.pen_id).filter((v): v is string => !!v))
-  );
-  const pensRes = penIds.length
-    ? await sb.from('pens').select('id, pen_name').in('id', penIds)
-    : { data: [] as { id: string; pen_name: string }[] };
-
-  const pensMap = new Map<string, { id: string; pen_name: string }>(
-    (pensRes.data ?? []).map((p) => [p.id, p])
-  );
-  const sitesMap = new Map<string, { id: string; site_name: string }>(
-    sites.map((s) => [s.id, s])
-  );
-
-  return {
-    sites,
-    devices,
-    pensMap,
-    sitesMap,
-    total,
-    page,
-    pageSize: PAGE_SIZE,
-    totalPages: Math.max(1, Math.ceil(total / PAGE_SIZE)),
-  };
-}
-
 export default async function DevicesPage(props: PageProps) {
-  const searchParams = await props.searchParams;
-  const { sites, devices, pensMap, sitesMap, total, page, pageSize, totalPages } =
-    await load(searchParams);
+  const sp = await props.searchParams;
+
+  const page = sp.page ? parseInt(sp.page, 10) : 1;
+  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
+
+  const [kpis, listResult, detail] = await Promise.all([
+    getDevicesKpis(),
+    getDevicesList(
+      {
+        site: sp.site,
+        pen: sp.pen,
+        device_type: sp.device_type,
+        signal_status: sp.signal_status,
+        low_battery: sp.low_battery === '1',
+        search: sp.search,
+      },
+      safePage,
+    ),
+    sp.device ? getDeviceDetail(sp.device) : Promise.resolve(null),
+  ]);
+
+  const filterCount = [
+    sp.site,
+    sp.pen,
+    sp.device_type,
+    sp.signal_status,
+    sp.low_battery,
+    sp.search,
+  ].filter(Boolean).length;
+
+  // Pens narrowed to selected site
+  const pensInScope = sp.site
+    ? listResult.pens.filter((p) => p.site_id === sp.site)
+    : listResult.pens;
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="font-display text-section">Devices</h1>
         <p className="mt-1 text-sm text-ink-secondary">
-          {total} {total === 1 ? 'device' : 'devices'} reporting telemetry.
+          {kpis.fleet.total_active}{' '}
+          {kpis.fleet.total_active === 1 ? 'device' : 'devices'} across{' '}
+          {kpis.by_site.length}{' '}
+          {kpis.by_site.length === 1 ? 'site' : 'sites'} · battery, signal &
+          telemetry health.
         </p>
       </header>
 
+      {/* KPI cards */}
+      <DevicesKpisGrid data={kpis} />
+
+      {/* Filters */}
       <form className="flex flex-wrap items-end gap-3" method="get">
-        <FilterSelect id="site" label="Site" defaultValue={searchParams.site}>
-          <option value="">All sites</option>
-          {sites.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.site_name}
-            </option>
-          ))}
-        </FilterSelect>
-
-        <FilterSelect id="type" label="Type" defaultValue={searchParams.type}>
-          <option value="">All types</option>
-          {DEVICE_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </FilterSelect>
-
-        <FilterSelect id="signal" label="Signal" defaultValue={searchParams.signal}>
-          <option value="">All</option>
-          {SIGNAL_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </FilterSelect>
-
+        <FilterSelect
+          name="site"
+          label="Site"
+          value={sp.site ?? ''}
+          options={listResult.sites.map((s) => ({
+            value: s.id,
+            label: s.site_name,
+          }))}
+          allLabel="All sites"
+        />
+        <FilterSelect
+          name="pen"
+          label="Pen"
+          value={sp.pen ?? ''}
+          options={pensInScope.map((p) => ({
+            value: p.id,
+            label: p.pen_name,
+          }))}
+          allLabel="Any pen"
+        />
+        <FilterSelect
+          name="device_type"
+          label="Type"
+          value={sp.device_type ?? ''}
+          options={(DEVICE_TYPES as readonly string[]).map((t) => ({
+            value: t,
+            label: t.replace('_', ' '),
+          }))}
+          allLabel="Any type"
+        />
+        <FilterSelect
+          name="signal_status"
+          label="Signal"
+          value={sp.signal_status ?? ''}
+          options={(SIGNAL_STATUSES as readonly string[]).map((s) => ({
+            value: s,
+            label: s,
+          }))}
+          allLabel="Any signal"
+        />
+        <label className="flex cursor-pointer items-center gap-2 pb-1.5 text-sm text-ink-secondary">
+          <input
+            type="checkbox"
+            name="low_battery"
+            value="1"
+            defaultChecked={sp.low_battery === '1'}
+            className="h-4 w-4 accent-brand-orange"
+          />
+          Battery &lt;30%
+        </label>
+        <div>
+          <label
+            htmlFor="search"
+            className="block text-xs uppercase tracking-wider text-ink-muted"
+          >
+            Search
+          </label>
+          <input
+            id="search"
+            name="search"
+            type="text"
+            placeholder="serial / model"
+            defaultValue={sp.search ?? ''}
+            className="mt-1 rounded-btn border border-surface-border bg-transparent px-3 py-1.5 text-sm placeholder:text-ink-muted"
+          />
+        </div>
         <button
           type="submit"
           className="rounded-btn border border-surface-border px-3 py-1.5 text-sm transition-colors hover:border-brand-orange/40"
         >
           Apply
         </button>
-
-        {(searchParams.site || searchParams.type || searchParams.signal) && (
+        {filterCount > 0 && (
           <Link
             href="/devices"
-            className="rounded-btn px-3 py-1.5 text-sm text-ink-secondary hover:text-brand-orange"
+            className="rounded-btn px-3 py-1.5 text-sm text-ink-secondary transition-colors hover:text-brand-orange"
           >
-            Reset
+            Reset ({filterCount})
           </Link>
         )}
       </form>
 
-      <Card>
-        <CardContent className="p-0">
-          {devices.length === 0 ? (
-            <p className="px-6 py-10 text-center text-sm text-ink-muted">
-              No devices match the current filters.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-surface-border text-left text-xs uppercase tracking-wider text-ink-muted">
-                    <th className="px-4 py-2 font-medium">Serial</th>
-                    <th className="px-4 py-2 font-medium">Type</th>
-                    <th className="px-4 py-2 font-medium">Model</th>
-                    <th className="px-4 py-2 font-medium">Site / Pen</th>
-                    <th className="px-4 py-2 font-medium">Battery</th>
-                    <th className="px-4 py-2 font-medium">Signal</th>
-                    <th className="px-4 py-2 font-medium">Last seen</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {devices.map((d) => {
-                    const pen = d.pen_id ? pensMap.get(d.pen_id) : undefined;
-                    const site = d.site_id ? sitesMap.get(d.site_id) : undefined;
-                    return (
-                      <tr
-                        key={d.id}
-                        className="border-b border-surface-border last:border-0"
-                      >
-                        <td className="px-4 py-2 font-mono text-xs text-ink-primary">
-                          {d.serial_number}
-                        </td>
-                        <td className="px-4 py-2">
-                          <Badge variant="neutral">{d.device_type}</Badge>
-                        </td>
-                        <td className="px-4 py-2 text-ink-secondary">
-                          {d.model ?? '—'}
-                        </td>
-                        <td className="px-4 py-2 text-ink-secondary">
-                          {site?.site_name ?? '—'}
-                          {pen && (
-                            <span className="text-ink-muted"> · {pen.pen_name}</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2">
-                          <Battery level={d.battery_status} />
-                        </td>
-                        <td className="px-4 py-2">
-                          <SignalBadge status={d.signal_status} />
-                        </td>
-                        <td className="px-4 py-2 text-ink-muted">
-                          {d.last_seen ? formatRelative(d.last_seen) : '—'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Note about last_seen during synthetic data phase */}
+      <div className="rounded-md border border-surface-border bg-white/[0.02] p-3 text-xs text-ink-muted">
+        <span className="text-ink-secondary">Heads up:</span>{' '}
+        <code className="font-mono">last_seen</code> reflects each device's
+        last reported timestamp. Synthetic telemetry doesn't yet update this
+        field, so most devices will appear stale during development. Real
+        on-device pings will populate this in production.
+      </div>
 
-      {totalPages > 1 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-          <p className="text-ink-muted">
-            Page {page} of {totalPages} · Showing {Math.min(pageSize, devices.length)}{' '}
-            of {total}
-          </p>
-          <div className="flex gap-2">
-            <PageLink
-              page={page - 1}
-              disabled={page <= 1}
-              label="Previous"
-              searchParams={searchParams}
-            />
-            <PageLink
-              page={page + 1}
-              disabled={page >= totalPages}
-              label="Next"
-              searchParams={searchParams}
-            />
-          </div>
-        </div>
-      )}
+      {/* Table */}
+      <DevicesTable result={listResult} />
+
+      {/* Drawer */}
+      {detail && <DeviceDrawer detail={detail} />}
     </div>
   );
 }
 
 function FilterSelect({
-  id,
+  name,
   label,
-  defaultValue,
-  children,
+  value,
+  options,
+  allLabel,
 }: {
-  id: string;
+  name: string;
   label: string;
-  defaultValue?: string;
-  children: React.ReactNode;
+  value: string;
+  options: { value: string; label: string }[];
+  allLabel: string;
 }) {
   return (
     <div>
       <label
-        htmlFor={id}
+        htmlFor={name}
         className="block text-xs uppercase tracking-wider text-ink-muted"
       >
         {label}
       </label>
       <select
-        id={id}
-        name={id}
-        defaultValue={defaultValue ?? ''}
-        className="mt-1 rounded-btn border border-surface-border bg-transparent px-3 py-1.5 text-sm"
+        id={name}
+        name={name}
+        defaultValue={value}
+        className="mt-1 rounded-btn border border-surface-border bg-transparent px-3 py-1.5 text-sm capitalize"
       >
-        {children}
+        <option value="">{allLabel}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value} className="capitalize">
+            {o.label}
+          </option>
+        ))}
       </select>
     </div>
-  );
-}
-
-function PageLink({
-  page,
-  disabled,
-  label,
-  searchParams,
-}: {
-  page: number;
-  disabled: boolean;
-  label: string;
-  searchParams: SearchParams;
-}) {
-  if (disabled) {
-    return (
-      <span className="rounded-btn border border-surface-border px-3 py-1.5 opacity-50">
-        {label}
-      </span>
-    );
-  }
-  const sp = new URLSearchParams();
-  if (searchParams.site) sp.set('site', searchParams.site);
-  if (searchParams.type) sp.set('type', searchParams.type);
-  if (searchParams.signal) sp.set('signal', searchParams.signal);
-  sp.set('page', String(page));
-  return (
-    <Link
-      href={`/devices?${sp.toString()}`}
-      className="rounded-btn border border-surface-border px-3 py-1.5 transition-colors hover:border-brand-orange/40"
-    >
-      {label}
-    </Link>
-  );
-}
-
-function Battery({ level }: { level: number | null }) {
-  if (level === null || level === undefined) {
-    return <span className="text-ink-muted">—</span>;
-  }
-  const color =
-    level < 20 ? 'bg-rose-400' : level < 50 ? 'bg-amber-400' : 'bg-emerald-400';
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-1.5 w-14 overflow-hidden rounded-full bg-surface-border">
-        <div className={'h-full ' + color} style={{ width: `${level}%` }} />
-      </div>
-      <span className="text-xs tabular-nums text-ink-muted">{level}%</span>
-    </div>
-  );
-}
-
-function SignalBadge({ status }: { status: string | null }) {
-  const map: Record<string, string> = {
-    online: 'border-emerald-400/40 text-emerald-400',
-    degraded: 'border-amber-400/40 text-amber-400',
-    offline: 'border-rose-400/40 text-rose-400',
-  };
-  const cls = map[status ?? ''] ?? 'border-surface-border text-ink-secondary';
-  return (
-    <span className={'inline-flex items-center rounded-full border px-2 py-0.5 text-xs ' + cls}>
-      {status ?? '—'}
-    </span>
   );
 }
