@@ -7,11 +7,12 @@ import {
   Bell,
   TrendingUp,
   MapPin,
-  PawPrint,
+  Home,
   Radio,
   Sparkles,
   Settings,
 } from 'lucide-react';
+import { Pig } from '@/components/icons/Pig';
 import { Logo } from '@/components/brand/Logo';
 import { cn } from '@/lib/utils/cn';
 
@@ -20,7 +21,8 @@ import { cn } from '@/lib/utils/cn';
  *
  * Fixed left nav, 240px wide, dark surface. Active route is highlighted
  * with the brand orange. Icons are from lucide-react per the brand guideline
- * of "simple, recognizable at small sizes".
+ * of "simple, recognizable at small sizes". The Animals icon is a custom
+ * Pig SVG component because lucide doesn't ship one.
  *
  * The "Alerts" item supports a badge (critical count) fed by the parent layout.
  */
@@ -34,7 +36,8 @@ const navItems = [
   { href: '/alerts', label: 'Alerts', icon: Bell, badgeKey: 'critical' as const },
   { href: '/trends', label: 'Trends', icon: TrendingUp },
   { href: '/sites', label: 'Sites', icon: MapPin },
-  { href: '/animals', label: 'Animals', icon: PawPrint },
+  { href: '/pens', label: 'Pens', icon: Home },
+  { href: '/animals', label: 'Animals', icon: Pig },
   { href: '/devices', label: 'Devices', icon: Radio },
   { href: '/ai-insights', label: 'AI Insights', icon: Sparkles },
   { href: '/settings', label: 'Settings', icon: Settings },
@@ -80,7 +83,6 @@ export function Sidebar({ criticalAlertsCount = 0 }: SidebarProps) {
                     )}
                   />
                   <span className="flex-1 font-medium">{label}</span>
-
                   {badge > 0 && (
                     <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-status-critical px-1.5 text-[10px] font-bold text-white">
                       {badge > 99 ? '99+' : badge}
